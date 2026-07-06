@@ -1,0 +1,13 @@
+.git
+.codebase-memory
+.pytest_cache
+.ruff_cache
+.venv
+.uv-cache
+__pycache__
+*.pyc
+.env
+config.yml
+data
+dist
+build

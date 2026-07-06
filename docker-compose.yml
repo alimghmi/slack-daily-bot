@@ -1,0 +1,16 @@
+services:
+  dailybot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DAILY_BOT_CONFIG: /app/config.yml
+      DAILY_BOT_DB: /app/data/daily.db
+    volumes:
+      - ./config.yml:/app/config.yml:ro
+      - dailybot-data:/app/data
+
+volumes:
+  dailybot-data:

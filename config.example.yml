@@ -1,0 +1,28 @@
+timezone: Asia/Tehran
+
+schedule:
+  workdays: [sat, sun, mon, tue, wed]
+  prompt_time: "09:30"
+  reminder_time: "11:00"
+  final_status_time: "12:00"
+  reminders_enabled: true
+  final_status_enabled: true
+
+daily:
+  title: "Otanami Daily"
+  intro: "Share a brief update for today."
+  questions:
+    yesterday: "What did you complete since the previous workday?"
+    today: "What will you work on today?"
+    blockers: "Are there any blockers or areas where you need help?"
+  skip_dates: []
+
+audience:
+  exclude_user_ids: []
+  exclude_emails: []
+
+channel:
+  daily_channel_id: ""
+
+admin:
+  allowed_user_ids: []

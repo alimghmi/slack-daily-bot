@@ -1,0 +1,33 @@
+display_information:
+  name: Otanami Daily Bot
+features:
+  bot_user:
+    display_name: Otanami Daily
+    always_online: false
+  slash_commands:
+    - command: /daily-now
+      description: Send today's daily prompt to all eligible employees
+      should_escape: false
+    - command: /daily-status
+      description: Show today's daily submission status
+      should_escape: false
+    - command: /daily-final-status
+      description: Post today's final daily status to the daily channel
+      should_escape: false
+    - command: /daily-me
+      description: Open your daily form
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write
+      - commands
+      - im:write
+      - users:read
+      - users:read.email
+settings:
+  interactivity:
+    is_enabled: true
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

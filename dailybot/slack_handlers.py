@@ -30,9 +30,7 @@ def register_handlers(app: Any, service: DailyService) -> None:
 
     @app.view(VIEW_CALLBACK_DAILY)
     def handle_daily_submission(ack: Any, body: dict[str, Any], view: dict[str, Any]) -> None:
-        metadata = _metadata_from_view(view)
-        user_id = metadata.get("user_id") or body["user"]["id"]
-        work_date = date.fromisoformat(metadata["work_date"])
+        user_id, work_date = submission_context(body, view)
         answers = extract_answers(view)
         errors = service.validate_answers(answers)
         if errors:
@@ -40,7 +38,13 @@ def register_handlers(app: Any, service: DailyService) -> None:
             return
 
         ack()
-        service.submit_daily(user_id=user_id, answers=answers, work_date=work_date)
+        try:
+            service.submit_daily(user_id=user_id, answers=answers, work_date=work_date)
+        except PermissionError:
+            logger.warning(
+                "Rejected daily submission from ineligible user",
+                extra={"user_id": user_id, "work_date": work_date.isoformat()},
+            )
 
     @app.command("/daily-now")
     def daily_now(ack: Any, body: dict[str, Any], respond: Any) -> None:
@@ -84,10 +88,13 @@ def extract_answers(view: dict[str, Any]) -> dict[str, str]:
     answers = {}
     for block_id, action_map in values.items():
         answer_payload = action_map.get(ANSWER_ACTION_ID)
-        if answer_payload is None and action_map:
-            answer_payload = next(iter(action_map.values()))
         answers[block_id] = str((answer_payload or {}).get("value") or "")
     return answers
+
+
+def submission_context(body: dict[str, Any], view: dict[str, Any]) -> tuple[str, date]:
+    metadata = _metadata_from_view(view)
+    return body["user"]["id"], date.fromisoformat(metadata["work_date"])
 
 
 def _work_date_from_action(body: dict[str, Any]) -> date | None:

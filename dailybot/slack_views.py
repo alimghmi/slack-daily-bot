@@ -97,15 +97,15 @@ def daily_modal_view(
 
 def report_blocks(config: AppConfig, entry: DailyEntry) -> list[dict]:
     formatted_date = format_report_date(entry.work_date_value)
+    title_prefix = f"{REPORT_TITLE_EMOJI} " if REPORT_TITLE_EMOJI else ""
     blocks: list[dict] = [
         {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"{REPORT_TITLE_EMOJI} *<@{entry.user_id}> Daily, {formatted_date}*",
+                "text": f"{title_prefix}*<@{entry.user_id}> Daily, {formatted_date}*",
             },
         },
-        {"type": "divider"},
     ]
 
     for key, question in config.daily.questions.items():

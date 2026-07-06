@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from conftest import FakeSlack, make_config
 
+from dailybot.constants import REPORT_TITLE_EMOJI
 from dailybot.database import Database
 from dailybot.service import DailyService
 
@@ -141,13 +142,15 @@ def test_submission_creation_and_edit_updates_existing_daily_channel_message(
 
     daily_posts = [message for message in fake_slack.posted if message["channel"] == "CDAILY"]
     assert len(daily_posts) == 1
-    assert daily_posts[0]["blocks"][0]["text"]["text"] == (":sunny: *<@U1> Daily, July 6, 2026*")
-    assert daily_posts[0]["blocks"][1] == {"type": "divider"}
-    assert daily_posts[0]["blocks"][2]["text"]["text"].startswith(
+    title_prefix = f"{REPORT_TITLE_EMOJI} " if REPORT_TITLE_EMOJI else ""
+    assert daily_posts[0]["blocks"][0]["text"]["text"] == (
+        f"{title_prefix}*<@U1> Daily, July 6, 2026*"
+    )
+    assert daily_posts[0]["blocks"][1]["text"]["text"].startswith(
         ":white_check_mark: *Completed since the previous workday*"
     )
-    assert daily_posts[0]["blocks"][3]["text"]["text"].startswith(":dart: *Working on today*")
-    assert daily_posts[0]["blocks"][4]["text"]["text"].startswith(":construction: *Blockers*")
+    assert daily_posts[0]["blocks"][2]["text"]["text"].startswith(":dart: *Working on today*")
+    assert daily_posts[0]["blocks"][3]["text"]["text"].startswith(":construction: *Blockers*")
     assert "No blockers." in daily_posts[0]["blocks"][-1]["text"]["text"]
 
     result = service.submit_daily(user_id="U1", answers=second_answers, work_date=work_date)
@@ -158,7 +161,31 @@ def test_submission_creation_and_edit_updates_existing_daily_channel_message(
     assert len(daily_posts) == 1
     assert len(daily_updates) == 1
     assert daily_updates[0]["ts"] == daily_posts[0]["ts"]
-    assert daily_updates[0]["blocks"][0]["text"]["text"].startswith(":sunny: *<@U1> Daily")
+    assert daily_updates[0]["blocks"][0]["text"]["text"].startswith(f"{title_prefix}*<@U1> Daily")
+
+
+def test_excluded_user_cannot_submit_even_with_stale_modal(
+    database: Database, fake_slack: FakeSlack
+) -> None:
+    service = DailyService(
+        config=make_config({"audience": {"exclude_user_ids": ["U1"]}}),
+        database=database,
+        slack=fake_slack,
+    )
+
+    try:
+        service.submit_daily(
+            user_id="U1",
+            answers={"yesterday": "Done", "today": "Deploy", "blockers": "No blockers"},
+            work_date=date(2026, 7, 6),
+        )
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("Excluded user submission should be rejected.")
+
+    assert service.database.get_daily_entry("2026-07-06", "U1") is None
+    assert not [message for message in fake_slack.posted if message["channel"] == "CDAILY"]
 
 
 def test_message_not_found_posts_replacement_report(
@@ -181,6 +208,26 @@ def test_message_not_found_posts_replacement_report(
     assert len(daily_posts) == 2
     assert second_result.entry.daily_channel_message_ts != old_ts
     assert second_result.entry.daily_channel_message_ts == daily_posts[-1]["ts"]
+
+
+def test_deleted_prompt_confirmation_message_posts_private_fallback(
+    service: DailyService, fake_slack: FakeSlack
+) -> None:
+    work_date = date(2026, 7, 6)
+    employee = service.eligible_employees()[0]
+    assert service.send_prompt(employee, work_date)
+    fake_slack.fail_next_updates_with_message_not_found = 1
+
+    result = service.submit_daily(
+        user_id="U1",
+        answers={"yesterday": "Done", "today": "Deploy", "blockers": "No blockers"},
+        work_date=work_date,
+    )
+
+    assert result.published
+    dm_posts = [message for message in fake_slack.posted if message["channel"] == "DU1"]
+    assert len(dm_posts) == 2
+    assert dm_posts[-1]["text"] == "Your daily was submitted and posted."
 
 
 def test_pending_report_retry_after_post_failure(

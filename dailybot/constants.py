@@ -8,7 +8,7 @@ DEFAULT_QUESTION_HEADINGS = {
     "blockers": "Blockers",
 }
 
-REPORT_TITLE_EMOJI = ":sunny:"
+REPORT_TITLE_EMOJI = ""  # ":sunny:"
 
 REPORT_SECTION_EMOJIS = {
     "yesterday": ":white_check_mark:",

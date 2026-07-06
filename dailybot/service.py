@@ -263,8 +263,10 @@ class DailyService:
             raise ValueError(f"Invalid daily submission: {errors}")
 
         employee = self.get_employee_by_id(user_id)
+        if employee is None:
+            raise PermissionError(f"User {user_id} is not eligible to submit a daily.")
         if display_name is None:
-            display_name = employee.display_name if employee else user_id
+            display_name = employee.display_name
 
         ordered_answers = {key: answers[key].strip() for key in self.config.daily.questions}
         entry = self.database.save_daily_entry(
@@ -345,26 +347,34 @@ class DailyService:
         )
         try:
             if prompt and prompt.dm_channel_id and prompt.prompt_message_ts:
-                self.slack.call(
-                    "chat_update",
-                    channel=prompt.dm_channel_id,
-                    ts=prompt.prompt_message_ts,
-                    text=submitted_text,
-                    blocks=prompt_blocks(self.config, entry.work_date_value, submitted=True),
-                )
-            else:
-                dm_response = self.slack.call("conversations_open", users=entry.user_id)
-                dm_channel_id = (dm_response.get("channel") or {}).get("id")
-                if dm_channel_id:
+                try:
                     self.slack.call(
-                        "chat_postMessage",
-                        channel=dm_channel_id,
+                        "chat_update",
+                        channel=prompt.dm_channel_id,
+                        ts=prompt.prompt_message_ts,
                         text=submitted_text,
+                        blocks=prompt_blocks(self.config, entry.work_date_value, submitted=True),
                     )
+                except Exception as exc:
+                    if _slack_error_code(exc) != "message_not_found":
+                        raise
+                    self._post_private_confirmation(entry.user_id, submitted_text)
+            else:
+                self._post_private_confirmation(entry.user_id, submitted_text)
         except Exception:
             logger.exception(
                 "Failed to send private submission confirmation",
                 extra={"work_date": entry.work_date, "user_id": entry.user_id},
+            )
+
+    def _post_private_confirmation(self, user_id: str, text: str) -> None:
+        dm_response = self.slack.call("conversations_open", users=user_id)
+        dm_channel_id = (dm_response.get("channel") or {}).get("id")
+        if dm_channel_id:
+            self.slack.call(
+                "chat_postMessage",
+                channel=dm_channel_id,
+                text=text,
             )
 
     def final_status(self, *, work_date: date | None = None) -> FinalStatus:

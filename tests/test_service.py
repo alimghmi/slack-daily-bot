@@ -150,8 +150,9 @@ def test_submission_creation_and_edit_updates_existing_daily_channel_message(
         ":white_check_mark: *Completed since the previous workday*"
     )
     assert daily_posts[0]["blocks"][2]["text"]["text"].startswith(":dart: *Working on today*")
-    assert daily_posts[0]["blocks"][3]["text"]["text"].startswith(":construction: *Blockers*")
-    assert "No blockers." in daily_posts[0]["blocks"][-1]["text"]["text"]
+    report_text = "\n".join(block["text"]["text"] for block in daily_posts[0]["blocks"])
+    assert "Blockers" not in report_text
+    assert "No blockers" not in report_text
 
     result = service.submit_daily(user_id="U1", answers=second_answers, work_date=work_date)
     assert result.published

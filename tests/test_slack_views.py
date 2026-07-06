@@ -36,3 +36,55 @@ def test_report_blocks_escape_user_supplied_mentions() -> None:
     assert "&lt;!subteam^S123&gt;" in text
     assert "@\u200bchannel" in text
     assert "@\u200bhere" in text
+
+
+def test_report_blocks_hide_blockers_section_when_no_blockers() -> None:
+    entry = DailyEntry(
+        work_date="2026-07-06",
+        user_id="U1",
+        display_name="Ali",
+        answers={
+            "yesterday": "Done",
+            "today": "Deploy",
+            "blockers": "No blockers",
+        },
+        submitted_at="2026-07-06T08:00:00+03:30",
+        updated_at="2026-07-06T08:00:00+03:30",
+        daily_channel_id=None,
+        daily_channel_message_ts=None,
+        report_status="pending",
+        report_error=None,
+    )
+
+    text = "\n".join(
+        block["text"]["text"] for block in report_blocks(make_config(), entry) if "text" in block
+    )
+
+    assert "Blockers" not in text
+    assert "No blockers" not in text
+
+
+def test_report_blocks_show_blockers_section_when_blocked() -> None:
+    entry = DailyEntry(
+        work_date="2026-07-06",
+        user_id="U1",
+        display_name="Ali",
+        answers={
+            "yesterday": "Done",
+            "today": "Deploy",
+            "blockers": "Waiting on production credentials.",
+        },
+        submitted_at="2026-07-06T08:00:00+03:30",
+        updated_at="2026-07-06T08:00:00+03:30",
+        daily_channel_id=None,
+        daily_channel_message_ts=None,
+        report_status="pending",
+        report_error=None,
+    )
+
+    text = "\n".join(
+        block["text"]["text"] for block in report_blocks(make_config(), entry) if "text" in block
+    )
+
+    assert ":construction: *Blockers*" in text
+    assert "Waiting on production credentials." in text

@@ -111,8 +111,8 @@ def report_blocks(config: AppConfig, entry: DailyEntry) -> list[dict]:
     for key, question in config.daily.questions.items():
         heading = DEFAULT_QUESTION_HEADINGS.get(key, question)
         answer = entry.answers.get(key, "").strip()
-        if key.lower() == "blockers" and answer.lower() in NO_BLOCKERS_VALUES:
-            answer = "No blockers."
+        if key.lower() == "blockers" and _has_no_blockers(answer):
+            continue
         blocks.append(
             {
                 "type": "section",
@@ -127,6 +127,10 @@ def report_blocks(config: AppConfig, entry: DailyEntry) -> list[dict]:
             }
         )
     return blocks
+
+
+def _has_no_blockers(answer: str) -> bool:
+    return not answer.strip() or answer.strip().lower() in NO_BLOCKERS_VALUES
 
 
 def report_fallback_text(entry: DailyEntry) -> str:

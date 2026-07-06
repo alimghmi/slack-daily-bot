@@ -1,4 +1,4 @@
-# Otanami Slack Daily Bot
+# Slack Daily Bot
 
 Self-hosted Slack Socket Mode bot for collecting daily standup updates and immediately posting each submitted report to a configured daily channel.
 

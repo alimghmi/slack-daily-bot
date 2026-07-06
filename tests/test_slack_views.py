@@ -3,7 +3,7 @@ from __future__ import annotations
 from conftest import make_config
 
 from dailybot.models import DailyEntry
-from dailybot.slack_views import report_blocks
+from dailybot.slack_views import final_status_blocks, report_blocks
 
 
 def test_report_blocks_escape_user_supplied_mentions() -> None:
@@ -88,3 +88,9 @@ def test_report_blocks_show_blockers_section_when_blocked() -> None:
 
     assert ":construction: *Blockers*" in text
     assert "Waiting on production credentials." in text
+
+
+def test_final_status_blocks_preserve_user_mentions() -> None:
+    blocks = final_status_blocks("Daily status: 1 of 2 submitted.\n\nWaiting for:\n- <@U2>")
+
+    assert blocks[0]["text"]["text"].endswith("- <@U2>")

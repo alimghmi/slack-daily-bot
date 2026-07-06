@@ -138,7 +138,7 @@ def report_fallback_text(entry: DailyEntry) -> str:
 
 
 def final_status_blocks(status_text: str) -> list[dict]:
-    return [{"type": "section", "text": {"type": "mrkdwn", "text": _escape(status_text)}}]
+    return [{"type": "section", "text": {"type": "mrkdwn", "text": status_text}}]
 
 
 def _section_text(heading: str, answer: str, *, emoji: str | None = None) -> str:

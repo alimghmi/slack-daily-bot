@@ -403,7 +403,7 @@ class DailyService:
         if status.waiting:
             lines.append("")
             lines.append("Waiting for:")
-            lines.extend(f"- {employee.display_name}" for employee in status.waiting)
+            lines.extend(f"- <@{employee.user_id}>" for employee in status.waiting)
         return "\n".join(lines)
 
     def post_final_status(self, *, force: bool = False, work_date: date | None = None) -> bool:

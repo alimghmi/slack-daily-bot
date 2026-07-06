@@ -261,7 +261,7 @@ def test_final_status_counts_only_waiting_eligible_users(service: DailyService) 
     assert status.submitted_count == 1
     assert [employee.user_id for employee in status.waiting] == ["U2"]
     assert "Daily status: 1 of 2 submitted." in service.final_status_text(work_date=work_date)
-    assert "- Sara" in service.final_status_text(work_date=work_date)
+    assert "- <@U2>" in service.final_status_text(work_date=work_date)
 
 
 def test_manual_daily_modal_is_prepopulated(database: Database, fake_slack: FakeSlack) -> None:
